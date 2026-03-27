@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Monjez - Smart Labor Marketplace"
+version = "1.0.0"
+id = "artifacts/monjez"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19828
+
+[services.development]
+run = "pnpm --filter @workspace/monjez run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/monjez", "run", "build" ]
+publicDir = "artifacts/monjez/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19828"
+BASE_PATH = "/"

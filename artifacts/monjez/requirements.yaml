@@ -1,0 +1,22 @@
+packages:
+  "framer-motion": "For page transitions and micro-interactions"
+  "clsx": "For conditional class names"
+  "tailwind-merge": "For merging tailwind classes safely"
+  "date-fns": "For readable date formatting"
+  "react-hook-form": "For robust form state management"
+  "@hookform/resolvers": "For zod validation integration"
+  "zod": "For schema validation"
+  "lucide-react": "For beautiful consistent icons"
+
+images:
+  - path: "artifacts/monjez/public/images/hero-bg.png"
+    description: "A warm, abstract gradient background with soft amber, gold, and deep slate blue tones, giving a feeling of professional trust and opportunity. Very soft out-of-focus shapes."
+    aspect_ratio: "16:9"
+  - path: "artifacts/monjez/public/images/logo.png"
+    description: "A clean, modern minimalist logo mark for a labor marketplace called Monjez. Abstract geometric hands shaking or connecting dots in warm amber and slate blue. Transparent background."
+    aspect_ratio: "1:1"
+
+notes:
+  - Global fetch is intercepted in App.tsx to automatically inject the monjez_token from localStorage into the Authorization header.
+  - The app uses generated hooks from @workspace/api-client-react.
+  - RTL is set globally as both Arabic and Hebrew are right-to-left languages.

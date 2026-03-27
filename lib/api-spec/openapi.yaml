@@ -1,22 +1,33 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Monjez - Smart Labor Marketplace API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: User authentication and profiles
+  - name: jobs
+    description: Job listings management
+  - name: applications
+    description: Job applications
+  - name: ratings
+    description: Mutual rating system
+  - name: credits
+    description: Credit system and monetization
+  - name: ai
+    description: AI-powered job parsing
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +35,371 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /users/register:
+    post:
+      operationId: registerUser
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterUserBody"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/login:
+    post:
+      operationId: loginUser
+      tags: [auth]
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginUserBody"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateMe
+      tags: [auth]
+      summary: Update current user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileBody"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /jobs:
+    get:
+      operationId: listJobs
+      tags: [jobs]
+      summary: List jobs (sorted by proximity if coords provided)
+      parameters:
+        - name: lat
+          in: query
+          schema:
+            type: number
+        - name: lng
+          in: query
+          schema:
+            type: number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: List of jobs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobListResponse"
+    post:
+      operationId: createJob
+      tags: [jobs]
+      summary: Create a new job posting
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJobBody"
+      responses:
+        "201":
+          description: Job created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+
+  /jobs/{jobId}:
+    get:
+      operationId: getJob
+      tags: [jobs]
+      summary: Get a specific job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Job details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateJob
+      tags: [jobs]
+      summary: Update a job posting
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateJobBody"
+      responses:
+        "200":
+          description: Updated job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+
+  /jobs/{jobId}/boost:
+    post:
+      operationId: boostJob
+      tags: [jobs]
+      summary: Boost a job posting (deducts credits)
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Job boosted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /jobs/{jobId}/applications:
+    get:
+      operationId: getJobApplications
+      tags: [applications]
+      summary: Get applications for a job (employer only)
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of applications
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationListResponse"
+    post:
+      operationId: applyToJob
+      tags: [applications]
+      summary: Apply to a job (one-tap)
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Application submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "409":
+          description: Already applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /applications/{applicationId}/reveal-contact:
+    post:
+      operationId: revealContact
+      tags: [applications]
+      summary: Reveal worker contact (costs credits)
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Contact revealed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevealContactResponse"
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /applications/my:
+    get:
+      operationId: getMyApplications
+      tags: [applications]
+      summary: Get current worker's applications
+      responses:
+        "200":
+          description: My applications
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationListResponse"
+
+  /ratings:
+    post:
+      operationId: submitRating
+      tags: [ratings]
+      summary: Submit a rating after job completion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitRatingBody"
+      responses:
+        "201":
+          description: Rating submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rating"
+        "409":
+          description: Already rated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /credits/balance:
+    get:
+      operationId: getCreditBalance
+      tags: [credits]
+      summary: Get current user's credit balance
+      responses:
+        "200":
+          description: Credit balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditBalance"
+
+  /credits/purchase:
+    post:
+      operationId: purchaseCredits
+      tags: [credits]
+      summary: Purchase credits (mock payment)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseCreditsBody"
+      responses:
+        "200":
+          description: Credits purchased
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditBalance"
+
+  /ai/parse-job:
+    post:
+      operationId: parseJobWithAI
+      tags: [ai]
+      summary: Parse natural language job description with AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParseJobBody"
+      responses:
+        "200":
+          description: Parsed job data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParsedJob"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +410,405 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [worker, employer]
+        bio:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        trustScore:
+          type: number
+          nullable: true
+        creditBalance:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - phone
+        - role
+        - creditBalance
+        - createdAt
+
+    RegisterUserBody:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum: [worker, employer]
+        city:
+          type: string
+          nullable: true
+        bio:
+          type: string
+          nullable: true
+      required:
+        - name
+        - phone
+        - password
+        - role
+
+    LoginUserBody:
+      type: object
+      properties:
+        phone:
+          type: string
+        password:
+          type: string
+      required:
+        - phone
+        - password
+
+    LoginResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+      required:
+        - user
+        - token
+
+    UpdateProfileBody:
+      type: object
+      properties:
+        name:
+          type: string
+        bio:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+
+    Job:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        location:
+          type: string
+        city:
+          type: string
+        lat:
+          type: number
+          nullable: true
+        lng:
+          type: number
+          nullable: true
+        salary:
+          type: number
+        salaryType:
+          type: string
+          enum: [hourly, daily, fixed]
+        jobDate:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [open, closed, filled]
+        isBoosted:
+          type: boolean
+        boostedUntil:
+          type: string
+          format: date-time
+          nullable: true
+        employer:
+          $ref: "#/components/schemas/UserSummary"
+        applicantCount:
+          type: integer
+        distance:
+          type: number
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - location
+        - city
+        - salary
+        - salaryType
+        - status
+        - isBoosted
+        - employer
+        - applicantCount
+        - createdAt
+
+    UserSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        trustScore:
+          type: number
+          nullable: true
+        city:
+          type: string
+          nullable: true
+      required:
+        - id
+        - name
+
+    CreateJobBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        location:
+          type: string
+        city:
+          type: string
+        lat:
+          type: number
+          nullable: true
+        lng:
+          type: number
+          nullable: true
+        salary:
+          type: number
+        salaryType:
+          type: string
+          enum: [hourly, daily, fixed]
+        jobDate:
+          type: string
+          nullable: true
+      required:
+        - title
+        - location
+        - city
+        - salary
+        - salaryType
+
+    UpdateJobBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        location:
+          type: string
+        city:
+          type: string
+        salary:
+          type: number
+        salaryType:
+          type: string
+          enum: [hourly, daily, fixed]
+        jobDate:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [open, closed, filled]
+
+    JobListResponse:
+      type: object
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/Job"
+        total:
+          type: integer
+      required:
+        - jobs
+        - total
+
+    Application:
+      type: object
+      properties:
+        id:
+          type: integer
+        jobId:
+          type: integer
+        worker:
+          $ref: "#/components/schemas/UserSummary"
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+        contactRevealed:
+          type: boolean
+        phone:
+          type: string
+          nullable: true
+        appliedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - jobId
+        - worker
+        - status
+        - contactRevealed
+        - appliedAt
+
+    ApplicationListResponse:
+      type: object
+      properties:
+        applications:
+          type: array
+          items:
+            $ref: "#/components/schemas/Application"
+        total:
+          type: integer
+      required:
+        - applications
+        - total
+
+    RevealContactResponse:
+      type: object
+      properties:
+        phone:
+          type: string
+        creditBalance:
+          type: integer
+      required:
+        - phone
+        - creditBalance
+
+    Rating:
+      type: object
+      properties:
+        id:
+          type: integer
+        jobId:
+          type: integer
+        raterId:
+          type: integer
+        rateeId:
+          type: integer
+        score:
+          type: integer
+        comment:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - jobId
+        - raterId
+        - rateeId
+        - score
+        - createdAt
+
+    SubmitRatingBody:
+      type: object
+      properties:
+        jobId:
+          type: integer
+        rateeId:
+          type: integer
+        score:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+          nullable: true
+      required:
+        - jobId
+        - rateeId
+        - score
+
+    CreditBalance:
+      type: object
+      properties:
+        balance:
+          type: integer
+      required:
+        - balance
+
+    PurchaseCreditsBody:
+      type: object
+      properties:
+        amount:
+          type: integer
+          minimum: 1
+      required:
+        - amount
+
+    ParseJobBody:
+      type: object
+      properties:
+        text:
+          type: string
+        language:
+          type: string
+          enum: [ar, he, en]
+          nullable: true
+      required:
+        - text
+
+    ParsedJob:
+      type: object
+      properties:
+        title:
+          type: string
+        location:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        salary:
+          type: number
+          nullable: true
+        salaryType:
+          type: string
+          enum: [hourly, daily, fixed]
+          nullable: true
+        jobDate:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+      required:
+        - title
