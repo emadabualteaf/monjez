@@ -113,7 +113,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateProfileBody"
+              $ref: "#/components/schemas/UpdateMeBody"
       responses:
         "200":
           description: Updated user
@@ -121,6 +121,50 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+
+  /users/send-otp:
+    post:
+      operationId: sendOtp
+      tags: [auth]
+      summary: Send OTP to user phone for verification
+      responses:
+        "200":
+          description: OTP sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendOtpResponse"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/verify-otp:
+    post:
+      operationId: verifyOtp
+      tags: [auth]
+      summary: Verify OTP code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyOtpBody"
+      responses:
+        "200":
+          description: Phone verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Invalid or expired OTP
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /jobs:
     get:
@@ -170,6 +214,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Job"
+        "403":
+          description: Phone not verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /jobs/{jobId}:
     get:
@@ -438,6 +488,14 @@ components:
         city:
           type: string
           nullable: true
+        israeliId:
+          type: string
+          nullable: true
+        businessId:
+          type: string
+          nullable: true
+        phoneVerified:
+          type: boolean
         trustScore:
           type: number
           nullable: true
@@ -451,6 +509,7 @@ components:
         - name
         - phone
         - role
+        - phoneVerified
         - creditBalance
         - createdAt
 
@@ -470,6 +529,12 @@ components:
           type: string
           nullable: true
         bio:
+          type: string
+          nullable: true
+        israeliId:
+          type: string
+          nullable: true
+        businessId:
           type: string
           nullable: true
       required:
@@ -500,7 +565,7 @@ components:
         - user
         - token
 
-    UpdateProfileBody:
+    UpdateMeBody:
       type: object
       properties:
         name:
@@ -511,6 +576,34 @@ components:
         city:
           type: string
           nullable: true
+        israeliId:
+          type: string
+          nullable: true
+        businessId:
+          type: string
+          nullable: true
+
+    SendOtpResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        otpCode:
+          type: string
+          description: OTP code (only returned in dev mode - remove in production)
+        cooldownSeconds:
+          type: integer
+      required:
+        - message
+        - cooldownSeconds
+
+    VerifyOtpBody:
+      type: object
+      properties:
+        code:
+          type: string
+      required:
+        - code
 
     Job:
       type: object

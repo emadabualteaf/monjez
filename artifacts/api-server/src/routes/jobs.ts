@@ -66,6 +66,10 @@ router.post("/", requireAuth, requireRole("employer"), async (req, res) => {
     return;
   }
   const user = (req as any).user;
+  if (!user.phoneVerified) {
+    res.status(403).json({ error: "PhoneNotVerified", message: "يجب التحقق من رقم الهاتف أولاً / יש לאמת את מספר הטלפון תחילה" });
+    return;
+  }
   const [job] = await db.insert(jobsTable).values({
     ...parsed.data,
     employerId: user.id,

@@ -28,6 +28,9 @@ export interface User {
   role: UserRole;
   bio?: string | null;
   city?: string | null;
+  israeliId?: string | null;
+  businessId?: string | null;
+  phoneVerified: boolean;
   trustScore?: number | null;
   creditBalance: number;
   createdAt: string;
@@ -48,6 +51,8 @@ export interface RegisterUserBody {
   role: RegisterUserBodyRole;
   city?: string | null;
   bio?: string | null;
+  israeliId?: string | null;
+  businessId?: string | null;
 }
 
 export interface LoginUserBody {
@@ -60,10 +65,23 @@ export interface LoginResponse {
   token: string;
 }
 
-export interface UpdateProfileBody {
+export interface UpdateMeBody {
   name?: string;
   bio?: string | null;
   city?: string | null;
+  israeliId?: string | null;
+  businessId?: string | null;
+}
+
+export interface SendOtpResponse {
+  message: string;
+  /** OTP code (only returned in dev mode - remove in production) */
+  otpCode?: string;
+  cooldownSeconds: number;
+}
+
+export interface VerifyOtpBody {
+  code: string;
 }
 
 export type JobSalaryType = (typeof JobSalaryType)[keyof typeof JobSalaryType];

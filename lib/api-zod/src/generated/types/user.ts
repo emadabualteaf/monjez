@@ -14,6 +14,9 @@ export interface User {
   role: UserRole;
   bio?: string | null;
   city?: string | null;
+  israeliId?: string | null;
+  businessId?: string | null;
+  phoneVerified: boolean;
   trustScore?: number | null;
   creditBalance: number;
   createdAt: Date;

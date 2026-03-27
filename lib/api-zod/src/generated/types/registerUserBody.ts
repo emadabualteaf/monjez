@@ -14,4 +14,6 @@ export interface RegisterUserBody {
   role: RegisterUserBodyRole;
   city?: string | null;
   bio?: string | null;
+  israeliId?: string | null;
+  businessId?: string | null;
 }

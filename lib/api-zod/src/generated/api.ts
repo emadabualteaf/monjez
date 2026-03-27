@@ -24,6 +24,8 @@ export const RegisterUserBody = zod.object({
   role: zod.enum(["worker", "employer"]),
   city: zod.string().nullish(),
   bio: zod.string().nullish(),
+  israeliId: zod.string().nullish(),
+  businessId: zod.string().nullish(),
 });
 
 /**
@@ -42,6 +44,9 @@ export const LoginUserResponse = zod.object({
     role: zod.enum(["worker", "employer"]),
     bio: zod.string().nullish(),
     city: zod.string().nullish(),
+    israeliId: zod.string().nullish(),
+    businessId: zod.string().nullish(),
+    phoneVerified: zod.boolean(),
     trustScore: zod.number().nullish(),
     creditBalance: zod.number(),
     createdAt: zod.date(),
@@ -59,6 +64,9 @@ export const GetMeResponse = zod.object({
   role: zod.enum(["worker", "employer"]),
   bio: zod.string().nullish(),
   city: zod.string().nullish(),
+  israeliId: zod.string().nullish(),
+  businessId: zod.string().nullish(),
+  phoneVerified: zod.boolean(),
   trustScore: zod.number().nullish(),
   creditBalance: zod.number(),
   createdAt: zod.date(),
@@ -71,6 +79,8 @@ export const UpdateMeBody = zod.object({
   name: zod.string().optional(),
   bio: zod.string().nullish(),
   city: zod.string().nullish(),
+  israeliId: zod.string().nullish(),
+  businessId: zod.string().nullish(),
 });
 
 export const UpdateMeResponse = zod.object({
@@ -80,6 +90,43 @@ export const UpdateMeResponse = zod.object({
   role: zod.enum(["worker", "employer"]),
   bio: zod.string().nullish(),
   city: zod.string().nullish(),
+  israeliId: zod.string().nullish(),
+  businessId: zod.string().nullish(),
+  phoneVerified: zod.boolean(),
+  trustScore: zod.number().nullish(),
+  creditBalance: zod.number(),
+  createdAt: zod.date(),
+});
+
+/**
+ * @summary Send OTP to user phone for verification
+ */
+export const SendOtpResponse = zod.object({
+  message: zod.string(),
+  otpCode: zod
+    .string()
+    .optional()
+    .describe("OTP code (only returned in dev mode - remove in production)"),
+  cooldownSeconds: zod.number(),
+});
+
+/**
+ * @summary Verify OTP code
+ */
+export const VerifyOtpBody = zod.object({
+  code: zod.string(),
+});
+
+export const VerifyOtpResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  phone: zod.string(),
+  role: zod.enum(["worker", "employer"]),
+  bio: zod.string().nullish(),
+  city: zod.string().nullish(),
+  israeliId: zod.string().nullish(),
+  businessId: zod.string().nullish(),
+  phoneVerified: zod.boolean(),
   trustScore: zod.number().nullish(),
   creditBalance: zod.number(),
   createdAt: zod.date(),

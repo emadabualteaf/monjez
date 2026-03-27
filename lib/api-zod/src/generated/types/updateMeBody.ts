@@ -6,8 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface UpdateProfileBody {
+export interface UpdateMeBody {
   name?: string;
   bio?: string | null;
   city?: string | null;
+  israeliId?: string | null;
+  businessId?: string | null;
 }
