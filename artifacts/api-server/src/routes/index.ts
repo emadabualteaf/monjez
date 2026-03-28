@@ -6,6 +6,8 @@ import applicationsRouter from "./applications.js";
 import ratingsRouter from "./ratings.js";
 import creditsRouter from "./credits.js";
 import aiParseRouter from "./ai-parse.js";
+import adminRouter from "./admin.js";
+import reportsRouter from "./reports.js";
 
 const router: IRouter = Router();
 
@@ -17,5 +19,7 @@ router.use("/applications", applicationsRouter);
 router.use("/ratings", ratingsRouter);
 router.use("/credits", creditsRouter);
 router.use("/ai", aiParseRouter);
+router.use("/admin", adminRouter);
+router.use("/reports", reportsRouter);
 
 export default router;

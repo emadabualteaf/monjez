@@ -8,6 +8,8 @@ import { WorkerFeed, WorkerApplications } from "@/pages/worker";
 import { EmployerDashboard, PostJob, JobDetail } from "@/pages/employer";
 import { CreditsPage, ProfilePage } from "@/pages/shared";
 import { VerifyPhonePage } from "@/pages/verify-phone";
+import { AdminDashboard } from "@/pages/admin";
+import { TermsPage, PrivacyPage } from "@/pages/legal";
 import { AppLayout } from "@/components/layout";
 import { I18nProvider } from "@/lib/i18n";
 import { useAuth } from "@/hooks/use-auth";
@@ -31,10 +33,11 @@ window.fetch = async (input, init = {}) => {
   return originalFetch(input, { ...init, headers });
 };
 
-function ProtectedRoute({ component: Component, allowedRole, requireVerified }: {
+function ProtectedRoute({ component: Component, allowedRole, requireVerified, adminOnly }: {
   component: any;
   allowedRole?: 'worker' | 'employer';
   requireVerified?: boolean;
+  adminOnly?: boolean;
 }) {
   const { user, isLoading } = useAuth();
 
@@ -100,6 +103,11 @@ function Router() {
           <ProtectedRoute component={VerifyPhonePage} />
         </Route>
 
+        {/* Admin */}
+        <Route path="/admin">
+          <ProtectedRoute component={AdminDashboard} />
+        </Route>
+
         {/* Shared Routes */}
         <Route path="/credits">
           <ProtectedRoute component={CreditsPage} />
@@ -107,6 +115,10 @@ function Router() {
         <Route path="/profile">
           <ProtectedRoute component={ProfilePage} />
         </Route>
+
+        {/* Legal Pages (public) */}
+        <Route path="/terms" component={TermsPage} />
+        <Route path="/privacy" component={PrivacyPage} />
 
         <Route component={NotFound} />
       </Switch>

@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
-import { db, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { db, usersTable, bansTable } from "@workspace/db";
+import { eq, or } from "drizzle-orm";
 import { signToken, requireAuth } from "../lib/auth.js";
 import { RegisterUserBody as RegisterUserBodySchema, LoginUserBody as LoginUserBodySchema, UpdateMeBody as UpdateProfileBodySchema, VerifyOtpBody as VerifyOtpBodySchema } from "@workspace/api-zod";
 
@@ -84,6 +84,15 @@ router.post("/login", async (req, res) => {
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
     res.status(401).json({ error: "Unauthorized", message: "رقم الهاتف أو كلمة المرور غير صحيحة / שם משתמש או סיסמה שגויים" });
+    return;
+  }
+
+  // Check if user is banned
+  const bans = await db.select().from(bansTable).where(
+    or(eq(bansTable.phone, user.phone), eq(bansTable.userId, user.id))
+  ).limit(1);
+  if (bans.length > 0) {
+    res.status(403).json({ error: "Banned", message: `تم حظر هذا الحساب: ${bans[0].reason} / חשבון זה חסום: ${bans[0].reason}` });
     return;
   }
 

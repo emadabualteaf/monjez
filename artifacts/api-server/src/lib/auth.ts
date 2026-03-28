@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 const JWT_SECRET = process.env.SESSION_SECRET ?? "monjez_dev_secret_2024";
 
 export function signToken(userId: number): string {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: "30d" });
+  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: "24h" });
 }
 
 export function verifyToken(token: string): { userId: number } | null {
