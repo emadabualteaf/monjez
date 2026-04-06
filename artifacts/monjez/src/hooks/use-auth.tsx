@@ -9,6 +9,7 @@ export function useAuth() {
       staleTime: 1000 * 60 * 5,
       throwOnError: false,
       enabled: !!localStorage.getItem("monjez_token"),
+      queryKey: ['user'],
     }
   });
   const [, setLocation] = useLocation();
@@ -19,7 +20,7 @@ export function useAuth() {
 
   const loginMutation = useLoginUser({
     mutation: {
-      onSuccess: (data) => {
+      onSuccess: (data: any) => {
         localStorage.setItem("monjez_token", data.token);
         queryClient.setQueryData(getGetMeQueryKey(), data.user);
         setLocation(data.user.role === 'worker' ? '/worker' : '/employer');
@@ -29,7 +30,7 @@ export function useAuth() {
 
   const registerMutation = useRegisterUser({
     mutation: {
-      onSuccess: (data, variables) => {
+      onSuccess: (data: any, variables: any) => {
         loginMutation.mutate({ data: { phone: variables.data.phone, password: variables.data.password } });
       }
     }

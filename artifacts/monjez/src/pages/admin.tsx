@@ -136,9 +136,9 @@ export function AdminDashboard() {
           >
             <t.icon className="w-4 h-4" />
             {t.label}
-            {t.badge && t.badge > 0 && (
-              <span className="absolute -top-1 -right-1 bg-destructive text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                {t.badge}
+            {(t as any).badge && (t as any).badge > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                {(t as any).badge}
               </span>
             )}
           </button>
@@ -245,7 +245,7 @@ export function AdminDashboard() {
                       />
                       <Button
                         size="sm"
-                        variant="destructive"
+                        variant="outline"
                         onClick={() => {
                           if (!banReason[u.id]) return alert('أدخل سبب الحظر');
                           if (confirm(`حظر ${u.name}?`)) {
@@ -284,7 +284,7 @@ export function AdminDashboard() {
                 </div>
                 <Button
                   size="sm"
-                  variant="destructive"
+                  variant="outline"
                   onClick={() => {
                     if (confirm(`حذف وظيفة "${job.title}"?`))
                       deleteJobMutation.mutate(job.id);

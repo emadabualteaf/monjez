@@ -34,10 +34,10 @@ async function formatJob(job: any, lat?: number, lng?: number) {
 }
 
 router.get("/", async (req, res) => {
-  const lat = req.query.lat ? parseFloat(req.query.lat as string) : undefined;
-  const lng = req.query.lng ? parseFloat(req.query.lng as string) : undefined;
-  const limit = parseInt(req.query.limit as string ?? "20");
-  const offset = parseInt(req.query.offset as string ?? "0");
+  const lat = req.query.lat && typeof req.query.lat === 'string' ? parseFloat(req.query.lat) : undefined;
+  const lng = req.query.lng && typeof req.query.lng === 'string' ? parseFloat(req.query.lng) : undefined;
+  const limit = parseInt(typeof req.query.limit === 'string' ? req.query.limit : "20");
+  const offset = parseInt(typeof req.query.offset === 'string' ? req.query.offset : "0");
 
   const jobs = await db.select().from(jobsTable)
     .where(eq(jobsTable.status, "open"))
@@ -83,7 +83,7 @@ router.post("/", requireAuth, requireRole("employer"), async (req, res) => {
 });
 
 router.get("/:jobId", async (req, res) => {
-  const jobId = parseInt(req.params.jobId);
+  const jobId = parseInt(String(req.params.jobId));
   const jobs = await db.select().from(jobsTable).where(eq(jobsTable.id, jobId)).limit(1);
   if (!jobs.length) {
     res.status(404).json({ error: "NotFound", message: "Job not found" });
@@ -93,7 +93,7 @@ router.get("/:jobId", async (req, res) => {
 });
 
 router.patch("/:jobId", requireAuth, requireRole("employer"), async (req, res) => {
-  const jobId = parseInt(req.params.jobId);
+  const jobId = parseInt(String(req.params.jobId));
   const user = (req as any).user;
   const parsed = UpdateJobBodySchema.safeParse(req.body);
   if (!parsed.success) {
@@ -121,7 +121,7 @@ router.patch("/:jobId", requireAuth, requireRole("employer"), async (req, res) =
 });
 
 router.post("/:jobId/boost", requireAuth, requireRole("employer"), async (req, res) => {
-  const jobId = parseInt(req.params.jobId);
+  const jobId = parseInt(String(req.params.jobId));
   const user = (req as any).user;
 
   if (user.creditBalance < BOOST_COST) {

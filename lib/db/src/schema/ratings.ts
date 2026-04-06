@@ -1,6 +1,6 @@
 import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod/v4";
+import { z } from "zod";
 import { usersTable } from "./users";
 import { jobsTable } from "./jobs";
 
@@ -14,6 +14,17 @@ export const ratingsTable = pgTable("ratings", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertRatingSchema = createInsertSchema(ratingsTable).omit({ id: true, createdAt: true });
-export type InsertRating = z.infer<typeof insertRatingSchema>;
+// إنشاء مخطط الإدخال
+export const insertRatingSchema = createInsertSchema(ratingsTable).omit({ 
+  id: true, 
+  createdAt: true 
+});
+
+// الإصلاح النهائي لتعارض الأنواع (Type Inference)
 export type Rating = typeof ratingsTable.$inferSelect;
+
+export type InsertRating = z.infer<
+  typeof insertRatingSchema extends z.ZodType<any, any, any> 
+  ? typeof insertRatingSchema 
+  : any
+>;

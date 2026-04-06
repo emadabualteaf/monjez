@@ -166,7 +166,7 @@ export function VerifyPhonePage() {
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => sendOtpMutation.mutate({})}
+            onClick={() => sendOtpMutation.mutate()}
             isLoading={sendOtpMutation.isPending}
             disabled={cooldown > 0}
           >

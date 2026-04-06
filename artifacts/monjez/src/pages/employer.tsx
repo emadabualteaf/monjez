@@ -5,20 +5,41 @@ import { useI18n } from '@/lib/i18n';
 import { Card, Badge, Button, Input, Textarea, Dialog } from '@/components/ui';
 import { useForm } from 'react-hook-form';
 import { useLocation } from 'wouter';
-import { Wand2, Users, Phone, Zap, Star } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
+import { Wand2, Users, Phone, Zap, Star, CheckCircle, XCircle, Briefcase } from 'lucide-react';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
+import { formatCurrency } from '@/lib/utils';
 
 export function EmployerDashboard() {
   const { user } = useAuth();
   const { t } = useI18n();
   const [, setLocation] = useLocation();
   const { data, isLoading } = useListJobs();
+  const [closingId, setClosingId] = useState<number | null>(null);
+  const queryClient = useQueryClient();
+
+  const closeJobMutation = useMutation({
+    mutationFn: async (jobId: number) => {
+      const token = localStorage.getItem('monjez_token');
+      const res = await fetch(`/api/jobs/${jobId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status: 'closed' }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
+      setClosingId(null);
+    },
+  });
 
   if (isLoading) return <div className="p-8 text-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div></div>;
 
-  // Filter jobs for this employer
   const myJobs = data?.jobs?.filter(j => j.employer.id === user?.id) || [];
+  const openJobs = myJobs.filter(j => j.status === 'open');
+  const closedJobs = myJobs.filter(j => j.status !== 'open');
 
   return (
     <div className="space-y-6">
@@ -32,34 +53,108 @@ export function EmployerDashboard() {
 
       {myJobs.length === 0 ? (
         <Card className="p-12 text-center border-dashed flex flex-col items-center justify-center gap-4">
+          <Briefcase className="w-12 h-12 text-muted-foreground/30" />
           <p className="text-lg text-muted-foreground">لم تقم بنشر أي وظائف بعد</p>
           <Button onClick={() => setLocation('/employer/post')} variant="outline">نشر وظيفة جديدة</Button>
         </Card>
       ) : (
-        <div className="grid gap-4">
-          {myJobs.map((job) => (
-             <Card key={job.id} className="p-5 hover:shadow-md transition-shadow">
-               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                 <div>
-                   <div className="flex items-center gap-3 mb-2">
-                     <h3 className="font-bold text-xl">{job.title}</h3>
-                     <Badge variant={job.status === 'open' ? 'success' : 'default' as any}>{t(job.status as any)}</Badge>
-                     {job.isBoosted && <Badge variant="accent" className="animate-pulse">مُمولة</Badge>}
-                   </div>
-                   <p className="text-sm text-muted-foreground">{job.city} • {job.salary} ₪</p>
-                 </div>
-                 <div className="flex items-center gap-3">
-                   <div className="bg-secondary px-4 py-2 rounded-xl text-center">
-                     <p className="text-2xl font-bold text-primary">{job.applicantCount}</p>
-                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">متقدمين</p>
-                   </div>
-                   <Button onClick={() => setLocation(`/employer/jobs/${job.id}`)}>إدارة</Button>
-                 </div>
-               </div>
-             </Card>
-          ))}
+        <div className="space-y-8">
+          {/* Open Jobs */}
+          {openJobs.length > 0 && (
+            <div>
+              <h2 className="text-lg font-bold text-muted-foreground mb-3 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
+                وظائف مفتوحة ({openJobs.length})
+              </h2>
+              <div className="grid gap-4">
+                {openJobs.map((job) => (
+                  <Card key={job.id} className="p-5 hover:shadow-md transition-shadow">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="font-bold text-xl">{job.title}</h3>
+                          <Badge variant="success">{t('open' as any)}</Badge>
+                          {job.isBoosted && <Badge variant="accent" className="animate-pulse">مُمولة</Badge>}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{job.city} • {formatCurrency(job.salary)}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="bg-secondary px-4 py-2 rounded-xl text-center">
+                          <p className="text-2xl font-bold text-primary">{job.applicantCount}</p>
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">متقدمين</p>
+                        </div>
+                        <Button onClick={() => setLocation(`/employer/jobs/${job.id}`)}>إدارة</Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setClosingId(job.id)}
+                          className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                        >
+                          إغلاق
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Closed Jobs */}
+          {closedJobs.length > 0 && (
+            <div>
+              <h2 className="text-lg font-bold text-muted-foreground mb-3 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-gray-400 inline-block"></span>
+                وظائف مغلقة ({closedJobs.length})
+              </h2>
+              <div className="grid gap-4 opacity-60">
+                {closedJobs.map((job) => (
+                  <Card key={job.id} className="p-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="font-bold text-lg">{job.title}</h3>
+                          <Badge variant="default">مغلقة</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{job.city} • {formatCurrency(job.salary)}</p>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => setLocation(`/employer/jobs/${job.id}`)}>
+                        عرض
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
+
+      {/* Confirm Close Dialog */}
+      <Dialog isOpen={!!closingId} onClose={() => setClosingId(null)} title="إغلاق الوظيفة">
+        <div className="space-y-4">
+          <p className="text-muted-foreground">هل أنت متأكد أنك تريد إغلاق هذه الوظيفة؟ لن تظهر للعمال بعد ذلك.</p>
+          <div className="flex gap-3">
+            <Button variant="outline" className="flex-1" onClick={() => setClosingId(null)}>إلغاء</Button>
+            <Button
+              variant="outline"
+              className="flex-1"
+              isLoading={closeJobMutation.isPending}
+              onClick={() => closingId && closeJobMutation.mutate(closingId)}
+            >
+              إغلاق الوظيفة
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* Mobile FAB */}
+      <button
+        onClick={() => setLocation('/employer/post')}
+        className="sm:hidden fixed bottom-24 left-4 rtl:right-4 rtl:left-auto z-20 w-14 h-14 bg-accent text-white rounded-full shadow-xl shadow-accent/30 flex items-center justify-center"
+      >
+        <Wand2 className="w-6 h-6" />
+      </button>
     </div>
   );
 }
@@ -146,7 +241,6 @@ export function PostJob() {
 
           <Input type="date" placeholder="تاريخ العمل" {...form.register('jobDate')} />
           <Textarea placeholder={t('description')} {...form.register('description')} className="min-h-[150px]" />
-          
         </Card>
         <Button type="submit" size="lg" className="w-full text-lg" isLoading={createMutation.isPending}>
           نشر الوظيفة الآن
@@ -180,6 +274,23 @@ export function JobDetail({ params }: { params: { id: string } }) {
     }
   });
 
+  // Accept / Reject application
+  const statusMutation = useMutation({
+    mutationFn: async ({ applicationId, status }: { applicationId: number; status: string }) => {
+      const token = localStorage.getItem('monjez_token');
+      const res = await fetch(`/api/applications/${applicationId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getGetJobApplicationsQueryKey(jobId) });
+    },
+  });
+
   if (jobLoading || appsLoading) return <div className="p-8 text-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div></div>;
   if (!job) return <div>Job not found</div>;
 
@@ -194,13 +305,13 @@ export function JobDetail({ params }: { params: { id: string } }) {
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div>
             <h1 className="text-3xl font-bold mb-2">{job.title}</h1>
-            <p className="text-primary-foreground/80 text-lg">{job.city} • {job.salary} ₪ / {job.salaryType}</p>
+            <p className="text-primary-foreground/80 text-lg">{job.city} • {formatCurrency(job.salary)} / {job.salaryType === 'hourly' ? 'ساعة' : job.salaryType === 'daily' ? 'يوم' : 'مقطوع'}</p>
           </div>
-          {!job.isBoosted && (
-             <Button variant="accent" onClick={() => boostMutation.mutate({ jobId })} isLoading={boostMutation.isPending} className="shadow-xl shadow-accent/30 whitespace-nowrap">
-               <Zap className="w-5 h-5 mr-2 rtl:ml-2 rtl:mr-0" />
-               ترقية (3 رصيد)
-             </Button>
+          {!job.isBoosted && job.status === 'open' && (
+            <Button variant="accent" onClick={() => boostMutation.mutate({ jobId })} isLoading={boostMutation.isPending} className="shadow-xl shadow-accent/30 whitespace-nowrap">
+              <Zap className="w-5 h-5 mr-2 rtl:ml-2 rtl:mr-0" />
+              ترقية (3 رصيد)
+            </Button>
           )}
         </div>
       </Card>
@@ -212,41 +323,73 @@ export function JobDetail({ params }: { params: { id: string } }) {
 
         {apps.length === 0 ? (
           <Card className="p-12 text-center border-dashed text-muted-foreground">
-             <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
-             <p>لا يوجد متقدمين حتى الآن</p>
+            <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
+            <p>لا يوجد متقدمين حتى الآن</p>
           </Card>
         ) : (
           <div className="grid gap-4">
             {apps.map((app) => (
-              <Card key={app.id} className="p-5 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div className="flex items-center gap-4 w-full sm:w-auto">
-                  <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center text-xl font-bold text-primary">
-                    {app.worker.name.charAt(0)}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-lg">{app.worker.name}</h4>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Star className="w-4 h-4 text-amber-500 mr-1 rtl:ml-1 rtl:mr-0 fill-current" />
-                      {app.worker.trustScore?.toFixed(1) || 'جديد'}
+              <Card key={app.id} className="p-5">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center text-xl font-bold text-primary">
+                      {app.worker.name.charAt(0)}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-lg">{app.worker.name}</h4>
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Star className="w-4 h-4 text-amber-500 mr-1 rtl:ml-1 rtl:mr-0 fill-current" />
+                        {app.worker.trustScore?.toFixed(1) || 'جديد'}
+                      </div>
+                      {app.status !== 'pending' && (
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block ${app.status === 'accepted' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          {app.status === 'accepted' ? '✅ مقبول' : '❌ مرفوض'}
+                        </span>
+                      )}
                     </div>
                   </div>
-                </div>
 
-                <div className="w-full sm:w-auto">
-                  {app.contactRevealed ? (
-                    <a href={`tel:${app.phone}`} className="flex items-center justify-center gap-2 bg-green-100 text-green-800 px-6 py-3 rounded-xl font-bold w-full hover:bg-green-200 transition-colors">
-                      <Phone className="w-5 h-5" />
-                      {app.phone}
-                    </a>
-                  ) : (
-                    <Button 
-                      className="w-full" 
-                      onClick={() => revealMutation.mutate({ applicationId: app.id })}
-                      isLoading={revealMutation.isPending}
-                    >
-                      إظهار الرقم (1 رصيد)
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+                    {/* Accept / Reject */}
+                    {app.status === 'pending' && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-green-700 border-green-300 hover:bg-green-50 flex-1 sm:flex-none"
+                          isLoading={statusMutation.isPending}
+                          onClick={() => statusMutation.mutate({ applicationId: app.id, status: 'accepted' })}
+                        >
+                          <CheckCircle className="w-4 h-4 mr-1" /> قبول
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-700 border-red-300 hover:bg-red-50 flex-1 sm:flex-none"
+                          isLoading={statusMutation.isPending}
+                          onClick={() => statusMutation.mutate({ applicationId: app.id, status: 'rejected' })}
+                        >
+                          <XCircle className="w-4 h-4 mr-1" /> رفض
+                        </Button>
+                      </>
+                    )}
+
+                    {/* Reveal Contact */}
+                    {app.contactRevealed ? (
+                      <a href={`tel:${app.phone}`} className="flex items-center justify-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-xl font-bold hover:bg-green-200 transition-colors">
+                        <Phone className="w-5 h-5" />
+                        {app.phone}
+                      </a>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => revealMutation.mutate({ applicationId: app.id })}
+                        isLoading={revealMutation.isPending}
+                      >
+                        كشف الرقم (1 رصيد)
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </Card>
             ))}

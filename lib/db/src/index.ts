@@ -1,8 +1,10 @@
 import { drizzle } from "drizzle-orm/node-postgres";
-import pg from "pg";
+import * as pg from "pg"; // ✅ التعديل هنا: استخدام * as pg لحل مشكلة Default Export
+
 import * as schema from "./schema";
 
-const { Pool } = pg;
+// استخراج Pool من مكتبة pg بشكل متوافق مع TS
+const Pool = pg.Pool; 
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -10,7 +12,11 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// إنشاء الاتصال باستخدام الـ Pool المصحح
+export const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL 
+});
+
 export const db = drizzle(pool, { schema });
 
 export * from "./schema";

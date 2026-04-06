@@ -2,15 +2,33 @@ import React from 'react';
 import { Link, useLocation } from 'wouter';
 import { useAuth } from '@/hooks/use-auth';
 import { useI18n } from '@/lib/i18n';
-import { Home, Briefcase, User, PlusCircle, LogOut, Coins, ShieldCheck, Shield } from 'lucide-react';
+import { Home, Briefcase, User, PlusCircle, LogOut, Coins, ShieldCheck, Shield, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useGetCreditBalance } from '@workspace/api-client-react';
+import { useQuery } from '@tanstack/react-query';
+
+async function fetchUnreadCount() {
+  const token = localStorage.getItem('monjez_token');
+  if (!token) return 0;
+  try {
+    const res = await fetch('/api/notifications', { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.unreadCount || 0;
+  } catch { return 0; }
+}
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const { t, lang, setLang } = useI18n();
   const [location] = useLocation();
-  const { data: credits } = useGetCreditBalance({ query: { enabled: !!user } });
+  const { data: credits } = useGetCreditBalance({ query: { enabled: !!user, queryKey: ['creditBalance'] } });
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ['notif-badge'],
+    queryFn: fetchUnreadCount,
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
 
   const isPublicPage = ['/terms', '/privacy'].includes(location);
 
@@ -22,22 +40,21 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     </div>
   );
 
-  const ADMIN_PHONE = import.meta.env.VITE_ADMIN_CHECK;
-  const isAdmin = false;
-
   const workerNav = [
     { href: '/worker', icon: Home, label: t('home') },
     { href: '/worker/applications', icon: Briefcase, label: t('applications') },
+    { href: '/notifications', icon: Bell, label: 'إشعارات', badge: unreadCount },
     { href: '/profile', icon: User, label: t('profile') },
   ];
 
   const employerNav = [
     { href: '/employer', icon: Home, label: t('myJobs') },
     { href: '/employer/post', icon: PlusCircle, label: t('postJob') },
+    { href: '/notifications', icon: Bell, label: 'إشعارات', badge: unreadCount },
     { href: '/profile', icon: User, label: t('profile') },
   ];
 
-  const nav = user.role === 'worker' ? workerNav : employerNav;
+  const nav = user?.role === 'worker' ? workerNav : employerNav;
 
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row">
@@ -54,6 +71,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* User Card */}
+        {user && (
         <div className="px-4 py-2">
           <div className="flex items-center gap-3 p-3 bg-secondary rounded-xl">
             <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
@@ -73,6 +91,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </div>
+        )}
 
         <nav className="flex-1 px-4 space-y-1 mt-2 overflow-y-auto">
           {nav.map((item) => {
@@ -82,7 +101,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 "flex items-center gap-4 px-4 py-3.5 rounded-xl text-base font-medium transition-all duration-200",
                 isActive ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
               )}>
-                <item.icon className="w-5 h-5" />
+                <div className="relative">
+                  <item.icon className="w-5 h-5" />
+                  {(item as any).badge > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 rtl:-left-1.5 rtl:right-auto bg-accent text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                      {(item as any).badge > 9 ? '9+' : (item as any).badge}
+                    </span>
+                  )}
+                </div>
                 <span>{item.label}</span>
               </Link>
             );
@@ -99,7 +125,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <span className="bg-accent text-white px-3 py-1 rounded-full font-bold shadow-sm group-hover:scale-105 transition-transform">{credits?.balance || 0}</span>
           </Link>
 
-          {/* Admin Link (only if admin) */}
+          {/* Admin Link */}
           <Link href="/admin" className="flex items-center gap-3 px-4 py-3 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-xl transition-colors font-medium text-sm">
             <Shield className="w-4 h-4" />
             <span>لوحة التحكم</span>
@@ -130,7 +156,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <header className="md:hidden glass sticky top-0 z-20 px-4 py-3 flex items-center justify-between border-b border-border/50">
           <div className="flex items-center gap-2">
             <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Monjez" className="h-8 w-auto" />
-            {!user.phoneVerified && (
+            {user && !user.phoneVerified && (
               <Link href="/verify-phone" className="flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-700 px-2 py-1 rounded-full text-[10px] font-bold">
                 <ShieldCheck className="w-3 h-3" />
                 {lang === 'ar' ? 'تحقق' : 'אמת'}
@@ -169,18 +195,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           const isActive = location === item.href;
           return (
             <Link key={item.href} href={item.href} className={cn(
-              "flex flex-col items-center p-2 rounded-xl min-w-[56px] transition-all",
+              "flex flex-col items-center p-2 rounded-xl min-w-[52px] transition-all",
               isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
             )}>
-              <div className={cn("p-1.5 rounded-full mb-0.5 transition-all", isActive && "bg-primary/10")}>
+              <div className={cn("p-1.5 rounded-full mb-0.5 transition-all relative", isActive && "bg-primary/10")}>
                 <item.icon className="w-5 h-5" />
+                {(item as any).badge > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-accent text-white text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">
+                    {(item as any).badge > 9 ? '9+' : (item as any).badge}
+                  </span>
+                )}
               </div>
               <span className="text-[9px] font-medium">{item.label}</span>
             </Link>
           );
         })}
         {/* Logout in mobile nav */}
-        <button onClick={logout} className="flex flex-col items-center p-2 rounded-xl min-w-[56px] text-muted-foreground hover:text-destructive transition-all">
+        <button onClick={logout} className="flex flex-col items-center p-2 rounded-xl min-w-[52px] text-muted-foreground hover:text-destructive transition-all">
           <div className="p-1.5 rounded-full mb-0.5">
             <LogOut className="w-5 h-5" />
           </div>

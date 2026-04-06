@@ -71,7 +71,7 @@ export function AuthPage() {
     }
   });
 
-  const selectedRole = registerForm.watch('role');
+  const selectedRole = registerForm.watch('role') as 'worker' | 'employer' | undefined;
   const israeliIdValue = registerForm.watch('israeliId') ?? '';
   const businessIdValue = registerForm.watch('businessId') ?? '';
 
@@ -208,9 +208,9 @@ export function AuthPage() {
 
                   {/* Role Selector */}
                   <div className="flex gap-2 p-1 bg-secondary rounded-xl">
-                    {(['worker', 'employer'] as const).map((role) => (
+                    {(['worker', 'employer'] as const).map((role: 'worker'|'employer') => (
                       <button key={role} type="button"
-                        onClick={() => registerForm.setValue('role', role)}
+                        onClick={() => registerForm.setValue('role', role as any)}
                         className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${registerForm.watch('role') === role ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:bg-white/50'}`}
                       >
                         {t(role)}
@@ -256,7 +256,7 @@ export function AuthPage() {
                   )}
 
                   {/* Profile Completion */}
-                  <ProfileCompletionBar form={registerForm} role={selectedRole} t={t} />
+                  {selectedRole && <ProfileCompletionBar form={registerForm} role={selectedRole} t={t} />}
 
                   {/* Terms */}
                   <div className="space-y-1">

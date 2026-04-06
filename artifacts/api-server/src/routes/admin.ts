@@ -42,7 +42,7 @@ router.get("/stats", requireAuth, requireAdmin, async (req, res) => {
 
 // User Management
 router.get("/users", requireAuth, requireAdmin, async (req, res) => {
-  const search = req.query.search as string | undefined;
+  const search = typeof req.query.search === 'string' ? req.query.search : undefined;
   const users = await db.select({
     id: usersTable.id,
     name: usersTable.name,
@@ -70,7 +70,7 @@ router.get("/users", requireAuth, requireAdmin, async (req, res) => {
 });
 
 router.get("/users/:id", requireAuth, requireAdmin, async (req, res) => {
-  const userId = parseInt(req.params.id);
+  const userId = parseInt(String(req.params.id));
   const users = await db.select({
     id: usersTable.id,
     name: usersTable.name,
@@ -95,7 +95,7 @@ router.get("/users/:id", requireAuth, requireAdmin, async (req, res) => {
 });
 
 router.patch("/users/:id/verify", requireAuth, requireAdmin, async (req, res) => {
-  const userId = parseInt(req.params.id);
+  const userId = parseInt(String(req.params.id));
   const [updated] = await db.update(usersTable)
     .set({ phoneVerified: true })
     .where(eq(usersTable.id, userId))
@@ -106,7 +106,7 @@ router.patch("/users/:id/verify", requireAuth, requireAdmin, async (req, res) =>
 // Ban System
 router.post("/users/:id/ban", requireAuth, requireAdmin, async (req, res) => {
   const admin = (req as any).user;
-  const userId = parseInt(req.params.id);
+  const userId = parseInt(String(req.params.id));
   const { reason } = req.body;
 
   if (!reason) {
@@ -138,7 +138,7 @@ router.get("/bans", requireAuth, requireAdmin, async (req, res) => {
 });
 
 router.delete("/bans/:id", requireAuth, requireAdmin, async (req, res) => {
-  const banId = parseInt(req.params.id);
+  const banId = parseInt(String(req.params.id));
   await db.delete(bansTable).where(eq(bansTable.id, banId));
   res.json({ success: true });
 });
@@ -150,14 +150,14 @@ router.get("/jobs", requireAuth, requireAdmin, async (req, res) => {
 });
 
 router.delete("/jobs/:id", requireAuth, requireAdmin, async (req, res) => {
-  const jobId = parseInt(req.params.id);
+  const jobId = parseInt(String(req.params.id));
   await db.delete(applicationsTable).where(eq(applicationsTable.jobId, jobId));
   await db.delete(jobsTable).where(eq(jobsTable.id, jobId));
   res.json({ success: true });
 });
 
 router.patch("/jobs/:id", requireAuth, requireAdmin, async (req, res) => {
-  const jobId = parseInt(req.params.id);
+  const jobId = parseInt(String(req.params.id));
   const { title, description, status } = req.body;
   const updates: Record<string, any> = {};
   if (title) updates.title = title;
@@ -174,7 +174,7 @@ router.get("/reports", requireAuth, requireAdmin, async (req, res) => {
 });
 
 router.patch("/reports/:id/resolve", requireAuth, requireAdmin, async (req, res) => {
-  const reportId = parseInt(req.params.id);
+  const reportId = parseInt(String(req.params.id));
   const [updated] = await db.update(reportsTable)
     .set({ status: "resolved" })
     .where(eq(reportsTable.id, reportId))

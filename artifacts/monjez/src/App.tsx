@@ -6,7 +6,7 @@ import NotFound from "@/pages/not-found";
 import { AuthPage } from "@/pages/auth";
 import { WorkerFeed, WorkerApplications } from "@/pages/worker";
 import { EmployerDashboard, PostJob, JobDetail } from "@/pages/employer";
-import { CreditsPage, ProfilePage } from "@/pages/shared";
+import { CreditsPage, ProfilePage, NotificationsPage } from "@/pages/shared";
 import { VerifyPhonePage } from "@/pages/verify-phone";
 import { AdminDashboard } from "@/pages/admin";
 import { TermsPage, PrivacyPage } from "@/pages/legal";
@@ -114,6 +114,9 @@ function Router() {
         </Route>
         <Route path="/profile">
           <ProtectedRoute component={ProfilePage} />
+        </Route>
+        <Route path="/notifications">
+          <ProtectedRoute component={NotificationsPage} />
         </Route>
 
         {/* Legal Pages (public) */}

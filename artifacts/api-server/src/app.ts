@@ -31,4 +31,13 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
+// Catch-all error handler for unhandled async errors
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  logger.error({ err: err.message, stack: err.stack, url: req.url }, "Unhandled error");
+  res.status(err.status || 500).json({
+    error: err.name || "InternalServerError",
+    message: err.message || "An unexpected error occurred"
+  });
+});
+
 export default app;

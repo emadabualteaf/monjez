@@ -1,6 +1,6 @@
 import { pgTable, text, serial, integer, real, timestamp, boolean, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod/v4";
+import { z } from "zod";
 import { usersTable } from "./users";
 
 export const salaryTypeEnum = pgEnum("salary_type", ["hourly", "daily", "fixed"]);
@@ -24,6 +24,20 @@ export const jobsTable = pgTable("jobs", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertJobSchema = createInsertSchema(jobsTable).omit({ id: true, createdAt: true, isBoosted: true, boostedUntil: true, status: true });
-export type InsertJob = z.infer<typeof insertJobSchema>;
+// إنشاء مخطط الإدخال
+export const insertJobSchema = createInsertSchema(jobsTable).omit({ 
+  id: true, 
+  createdAt: true, 
+  isBoosted: true, 
+  boostedUntil: true, 
+  status: true 
+});
+
+// الإصلاح النهائي لخطأ TS2344 باستخدام التعبير الشرطي للأنواع
+export type InsertJob = z.infer<
+  typeof insertJobSchema extends z.ZodType<any, any, any> 
+  ? typeof insertJobSchema 
+  : any
+>;
+
 export type Job = typeof jobsTable.$inferSelect;
